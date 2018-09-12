@@ -1,0 +1,29 @@
+# Compiled class file
+*.class
+
+# Log file
+*.log
+
+# BlueJ files
+*.ctxt
+
+# Mobile Tools for Java (J2ME)
+.mtj.tmp/
+
+# Package Files #
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+/target/
+/.classpath
+/.project
+/nbactions.xml
+/customs.json
+/src/main/resources/camunda-license.txt
+
+/logs/
+/twitter-review.mv.db

@@ -1,0 +1,173 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <!-- Version von Maven -->
+    <modelVersion>4.0.0</modelVersion>
+    
+    <!-- Grundangaben zum Maven-Projekt, Versionsnummer (hinterste Ziffer) jedesmal 
+    um 1 erhöhen, wenn etwas ändert. Die ersten zwei Ziffern entsprechen Spring 
+    Boot-Versionsnummer -->
+    <groupId>ch.zhaw.gpi</groupId>
+    <artifactId>twitter-review-prozess</artifactId>
+    <name>Twitter Review-Prozess</name>
+    <version>3.0.1</version>
+    
+    <!-- Konfiguration des Maven-Projekts -->
+    <properties>
+        <!-- Nicht bloss ANSI, sondern UTF-8 soll unterstützt sein -->
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        
+        <!-- Setzt die Spring Boot-Starter-Version -->
+        <camunda-bpm-spring-boot-starter.version>3.0.0</camunda-bpm-spring-boot-starter.version>
+        
+        <!-- Setzt die Camunda-Version
+             Vorsicht, dass diese bezüglich der ersten zwei Ziffern passend ist 
+             zur empfohlenen Spring Boot Starter-Version. Die letzte Ziffer darf
+             hingegen auch höher sein, damit die aktuellsten Patches enthalten
+             sind.
+
+             Um zu sehen, ob es neue Patches gibt, in Netbeans in der Zeile 
+             <version>${camunda.version}${camunda.enable.ee}</version> weiter unten
+             alles zwischen den XML-Tags vorübergehend löschen und statt dessen
+             CTRL+Leerschlag drücken
+             
+             Achtung: Beim Upgrade auf neuere Versionen muss der Local Storage des Browsers
+             geleert werden, weil sonst an etlichen Stellen nur die Translation-
+             Placeholders erscheinen statt der "übersetzten" Texte (sollte in 7.10 behoben sein).
+             Für Google Chrome ist das Vorgehen beschrieben hier:
+             https://forum.camunda.org/t/spring-boot-webapp-login-screen-showing-placeholders/8402/3?u=scepbjoern
+             -->
+        <camunda.version>7.9.2</camunda.version>
+        
+        <!-- Steuert, ob die Enterprise-Version von Camunda benutzt wird ("-ee" schreiben
+             oder die Community-Version (leer lassen). Weitere Bedingungen:
+             1. Eine Datei camunda-license.txt mit einem gültigen Key muss in
+                src/main/resources abgelegt sein (nicht committen!!!).
+             2. Es sind Credentials zum Camunda-EE-Repository erforderlich (siehe ganz unten) -->
+        <camunda.enable.ee>-ee</camunda.enable.ee>
+        
+        <!-- Java 8 soll genutzt werden beim Kompilieren -->
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        
+        <!-- Es sind keine Tests erforderlich -->
+        <skipTests>true</skipTests>
+    </properties>
+    
+    <!-- Setzt Spring Boot einerseits und Camunda anderseits als massgebend für die Verwaltung der Abhängigkeiten in Maven -->
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>2.0.2.RELEASE</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            
+            <dependency>
+                <groupId>org.camunda.bpm</groupId>
+                <artifactId>camunda-bom</artifactId>
+                <version>${camunda.version}${camunda.enable.ee}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+    
+    <!-- Legt die einzelnen Abhängigkeiten des Maven-Projekts fest -->
+    <dependencies>
+        <!-- Importiert eine für die Spring Boot-Umgebung konfigurierte Camunda-
+        Umgebung, beinhaltend: Spring-Framework, Tomcat-Server, Camunda Process
+        Engine, Camunda Webapps (Tasklist, Cockpit, Admin), Camunda Spin -->
+        <dependency>
+            <groupId>org.camunda.bpm.springboot</groupId>
+            <artifactId>camunda-bpm-spring-boot-starter-webapp${camunda.enable.ee}</artifactId>
+            <version>${camunda-bpm-spring-boot-starter.version}</version>
+        </dependency>
+        
+        <!-- Importiert die REST API als weiterer Zugang für die Camunda Process Engine -->
+        <dependency>
+            <groupId>org.camunda.bpm.springboot</groupId>
+            <artifactId>camunda-bpm-spring-boot-starter-rest</artifactId>
+            <version>${camunda-bpm-spring-boot-starter.version}</version>
+        </dependency>
+    
+        <!-- Importiert die H2-Datenbank-Abhängigkeit, damit die Camunda Process
+        Engine ihre Daten in H2 in-memory ablegen kann -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+        </dependency>
+        
+        <!-- Import die JDBC-Unterstützung für Spring Boot, damit H2 auch 
+        file-basiert sein kann -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-jdbc</artifactId>
+        </dependency>
+        
+        <!-- Importiert die Mail-Unterstützung für Spring Boot-Projekte. Sofern
+        keine Mails gesendet werden sollen, ist diese Abhängigkeit überflüssig -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+    </dependencies>
+    
+    <build>
+        <plugins>
+            <!-- The Spring Boot Maven Plugin provides Spring Boot support in Maven, 
+            allowing you to package executable jar or war archives and run an application “in-place”.
+            https://docs.spring.io/spring-boot/docs/2.0.4.RELEASE/maven-plugin/usage.html -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>2.0.3.RELEASE</version>
+                <configuration>
+                    <layout>ZIP</layout>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+    
+    <!-- Damit auch die neuesten Patches der Camunda-Komponenten verfügbar sind, sollen
+         die Komponenten nicht vom allgemeinen Maven-Repository https://mvnrepository.com
+         geladen werden, sondern von den bei Camunda gehosteten Nexus-Repositories.
+         Diese gibt es einerseits für die Community Edition (camunda-bpm-nexus) und
+         für die Enterprise Edition (camunda-bpm-ee). Die Community Repository funktioniert
+         out-of-the-box, da öffentlich zugänglich.
+
+         Die Enterprise Repository benötigt
+         hingegen Zugangsdaten, welche in einer Datei settings.xml im .m2-Verzeichnis
+         eingefügt werden. Das .m2-Verzeichnis befindet sich auf einem Windows 10-
+         Rechner in C:\Users\BENUTZERNAME\.m2. Der Inhalt von settings.xml sollte sein:
+         <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">
+            <servers>
+             <server>
+                <id>camunda-bpm-ee</id>
+                <username>BENUTZERNAME</username>
+                <password>PASSWORT</password>
+             </server>
+            </servers>
+           </settings> 
+    -->
+    <repositories>
+        <repository>
+            <id>camunda-bpm-nexus</id>
+            <name>camunda-bpm-nexus</name>
+            <url>https://app.camunda.com/nexus/content/groups/public</url>
+        </repository>
+        <repository>
+            <id>camunda-bpm-ee</id>
+            <name>camunda-bpm-ee</name>
+            <url>https://app.camunda.com/nexus/content/repositories/camunda-bpm-ee</url>
+        </repository>
+    </repositories>
+</project>
