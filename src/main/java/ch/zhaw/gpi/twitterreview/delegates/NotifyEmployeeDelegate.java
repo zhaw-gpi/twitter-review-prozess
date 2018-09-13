@@ -29,10 +29,14 @@ public class NotifyEmployeeDelegate implements JavaDelegate {
         String tweetContent = (String) de.getVariable("tweetContent");
         String checkResult = (String) de.getVariable("checkResult");
         String checkResultComment = (String) de.getVariable("checkResultComment");
+        Object mailMainPart = de.getVariable("mailMainPart");
         
         // Die E-Mail-Nachricht zusammenbauen
         String mailHauptteil;
-        if(checkResult.equals("rejected")){
+        
+        if(mailMainPart instanceof String){
+            mailHauptteil = (String) mailMainPart;
+        } else if(checkResult.equals("rejected")){
             mailHauptteil = "Leider wurde diese Tweet-Anfrage abgelehnt mit " +
                     "folgender Begründung:\n" + checkResultComment;
         } else {
