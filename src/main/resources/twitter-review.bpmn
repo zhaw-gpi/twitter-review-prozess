@@ -17,9 +17,9 @@
         <bpmn:flowNodeRef>ExclusiveGateway_0fj9kmh</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>TweetAnfrageBehandelt</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>Pruefergebnis</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>MitarbeiterKuerzelExtrahieren</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>TweetSenden</bpmn:flowNodeRef>
         <bpmn:flowNodeRef>MitarbeiterBenachrichtigen</bpmn:flowNodeRef>
-        <bpmn:flowNodeRef>MitarbeiterKuerzelExtrahieren</bpmn:flowNodeRef>
       </bpmn:lane>
     </bpmn:laneSet>
     <bpmn:sequenceFlow id="SequenceFlow_1vqcip2" sourceRef="TweetAnfrageEingereicht" targetRef="MitarbeiterKuerzelExtrahieren" />
@@ -51,19 +51,6 @@
     <bpmn:endEvent id="TweetAnfrageBehandelt" name="Tweet-Anfrage&#10;behandelt">
       <bpmn:incoming>SequenceFlow_0wkf2cr</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:task id="TweetSenden" name="Tweet senden">
-      <bpmn:extensionElements>
-        <camunda:properties>
-          <camunda:property name="KPI-Ratio" value="Tweet Rejected" />
-        </camunda:properties>
-      </bpmn:extensionElements>
-      <bpmn:incoming>Genehmigt</bpmn:incoming>
-      <bpmn:outgoing>SequenceFlow_13w0jnd</bpmn:outgoing>
-    </bpmn:task>
-    <bpmn:task id="MitarbeiterBenachrichtigen" name="Mitarbeiter benachrichtigen">
-      <bpmn:incoming>SequenceFlow_0akgqts</bpmn:incoming>
-      <bpmn:outgoing>SequenceFlow_0wkf2cr</bpmn:outgoing>
-    </bpmn:task>
     <bpmn:userTask id="TweetAnfragePruefen" name="Tweet-Anfrage prüfen" camunda:candidateGroups="kommunikationsabteilung">
       <bpmn:extensionElements>
         <camunda:formData>
@@ -110,6 +97,19 @@
       <bpmn:script>emailAdress = execution.getVariable("email");
 execution.setVariable("alias", emailAdress.substring(0,4));</bpmn:script>
     </bpmn:scriptTask>
+    <bpmn:serviceTask id="TweetSenden" name="Tweet senden" camunda:asyncBefore="true" camunda:delegateExpression="#{sendTweetAdapter}">
+      <bpmn:extensionElements>
+        <camunda:properties>
+          <camunda:property name="KPI-Ratio" value="Tweet Rejected" />
+        </camunda:properties>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Genehmigt</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_13w0jnd</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sendTask id="MitarbeiterBenachrichtigen" name="Mitarbeiter benachrichtigen" camunda:asyncBefore="true" camunda:delegateExpression="#{notifyEmployeeAdapter}">
+      <bpmn:incoming>SequenceFlow_0akgqts</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_0wkf2cr</bpmn:outgoing>
+    </bpmn:sendTask>
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_1y44tdo">
@@ -200,12 +200,6 @@ execution.setVariable("alias", emailAdress.substring(0,4));</bpmn:script>
       <bpmndi:BPMNShape id="Lane_1d0re29_di" bpmnElement="Lane_1d0re29">
         <dc:Bounds x="32" y="284" width="1059" height="234" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Task_19ckxfd_di" bpmnElement="TweetSenden">
-        <dc:Bounds x="612" y="418" width="100" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Task_1ighy8a_di" bpmnElement="MitarbeiterBenachrichtigen">
-        <dc:Bounds x="857" y="311" width="100" height="80" />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="UserTask_1o2fmod_di" bpmnElement="TweetAnfragePruefen">
         <dc:Bounds x="361" y="172" width="100" height="80" />
       </bpmndi:BPMNShape>
@@ -226,6 +220,12 @@ execution.setVariable("alias", emailAdress.substring(0,4));</bpmn:script>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="ScriptTask_0oeqqmr_di" bpmnElement="MitarbeiterKuerzelExtrahieren">
         <dc:Bounds x="139" y="311" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_1fbdslq_di" bpmnElement="TweetSenden">
+        <dc:Bounds x="612" y="418" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SendTask_169hbwy_di" bpmnElement="MitarbeiterBenachrichtigen">
+        <dc:Bounds x="857" y="311" width="100" height="80" />
       </bpmndi:BPMNShape>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
