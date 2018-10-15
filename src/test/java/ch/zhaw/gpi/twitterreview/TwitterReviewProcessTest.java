@@ -74,62 +74,89 @@ public class TwitterReviewProcessTest {
     @Test
     public void testHappyPath() {
         // ST: Variablen setzen, welche normalerweise der Benutzer im Startformular eingibt
+        Map<String, Object> processVariables = new HashMap<>();
+        processVariables.put(VAR_NAME_EMAIL, TEST_EMAIL);
+        processVariables.put(VAR_NAME_TWEET_CONTENT, TEST_TWEET_CONTENT);
 
         // ST: Neue Prozessinstanz mit diesen Variablen starten
+        ProcessInstance processInstance = runtimeService.startProcessInstanceByKey(PROCESS_DEFINITION_KEY, processVariables);
 
         // BP: Neue Prozessinstanz ist gestartet
+        assertThat(processInstance).isStarted();
 
         // BP: Mitarbeiter-Kürzel-Variable ist gesetzt und hat den erwarteten Wert
+        assertThat(processInstance).variables().containsEntry(VAR_NAME_ALIAS, TEST_ALIAS);
 
         // BP: Ein unerledigter User Task TweetAnfragePruefen besteht
+        assertThat(processInstance).task().hasDefinitionKey(BPMN_ELEMENT_TWEET_PRUEFEN);
 
         // ST: Den einzig offenen Task erledigen mit einem positiven Prüfergebnis
+        complete(task(processInstance), withVariables(VAR_NAME_CHECK_RESULT, "accepted"));
 
         // BP: Das Gateway 'Prüfergebnis' wurde durchschritten
+        assertThat(processInstance).hasPassed(BPMN_ELEMENT_PRUEFERGEBNIS);
 
         // ST: Den asynchronen Job TweetSenden ausführen
           // Hierzu zunächst nach dem einen offenen Job suchen. Falls es keinen oder mehrere gibt, dann gibt es eine Exception
-          
+        Job job = managementService.createJobQuery().activityId(BPMN_ELEMENT_TWEET_SENDEN).singleResult();
           // Dann diesen Job ausführen
+        managementService.executeJob(job.getId());
         
         // BP: Die Aufgabe 'Tweet senden' wurde durchschritten
+        assertThat(processInstance).hasPassed(BPMN_ELEMENT_TWEET_SENDEN);
         
         // ST: Den asynchronen Job MitarbeiterBenachrichtigen ausführen
           // Hierzu zunächst nach dem einen offenen Job suchen. Falls es keinen oder mehrere gibt, dann gibt es eine Exception
-          
+        job = managementService.createJobQuery().activityId(BPMN_ELEMENTMITARBEITER_BENACHRICHTIGEN).singleResult();
           // Dann diesen Job ausführen
+        managementService.executeJob(job.getId());
 
-        // BP: Die Prozessinstanz ist beendet
+        // BP: Die Prozessinstanz ist beendet        
+        assertThat(processInstance).isEnded();
     }
 
     @Test
     public void testRejection() {
         // ST: Variablen setzen, welche normalerweise der Benutzer im Startformular eingibt
+        Map<String, Object> processVariables = new HashMap<>();
+        processVariables.put(VAR_NAME_EMAIL, TEST_EMAIL);
+        processVariables.put(VAR_NAME_TWEET_CONTENT, TEST_TWEET_CONTENT);
 
         // ST: Neue Prozessinstanz mit diesen Variablen starten
+        ProcessInstance processInstance = runtimeService.startProcessInstanceByKey(PROCESS_DEFINITION_KEY, processVariables);
 
         // ST: Den einzig offenen Task erledigen mit einem ablehnenden Prüfergebnis
+        complete(task(processInstance), withVariables(VAR_NAME_CHECK_RESULT, "rejected"));
         
         // ST: Den asynchronen Job MitarbeiterBenachrichtigen ausführen
           // Hierzu zunächst nach dem einen offenen Job suchen. Falls es keinen oder mehrere gibt, dann gibt es eine Exception
-          
+        Job job = managementService.createJobQuery().activityId(BPMN_ELEMENTMITARBEITER_BENACHRICHTIGEN).singleResult();
           // Dann diesen Job ausführen
+        managementService.executeJob(job.getId());
 
-        // BP: Die Prozessinstanz ist beendet
-        
+        // BP: Die Prozessinstanz ist beendet        
+        assertThat(processInstance).isEnded();
     }
 
     @Test
-    public void testRevision() {        
+    public void testRevision() {
+        
         // ST: Variablen setzen, welche normalerweise der Benutzer im Startformular eingibt
+        Map<String, Object> processVariables = new HashMap<>();
+        processVariables.put(VAR_NAME_EMAIL, TEST_EMAIL);
+        processVariables.put(VAR_NAME_TWEET_CONTENT, TEST_TWEET_CONTENT);
 
         // ST: Neue Prozessinstanz mit diesen Variablen starten
+        ProcessInstance processInstance = runtimeService.startProcessInstanceByKey(PROCESS_DEFINITION_KEY, processVariables);
 
         // ST: Den einzig offenen Task erledigen mit einem Prüfergebnis "zu überarbeiten"
+        complete(task(processInstance), withVariables(VAR_NAME_CHECK_RESULT, "revisable"));
         
         // ST: Den einzig offenen Task erledigen (theoretisch mit einem neuen TweetContent, aber da ja kein Benutzer da ist, der diesen liest, sparen wir uns dies)
+        complete(task(processInstance));
         
         // BP: Ein unerledigter User Task TweetAnfragePruefen besteht
+        assertThat(processInstance).task().hasDefinitionKey(BPMN_ELEMENT_TWEET_PRUEFEN);
         
         // Alles weitere interessiert uns nicht, da schon in den anderen Testfällen abgedeckt
     }
