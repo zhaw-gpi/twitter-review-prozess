@@ -27,3 +27,4 @@
 
 /logs/
 /twitter-review.mv.db
+/src/main/resources/twitter.properties

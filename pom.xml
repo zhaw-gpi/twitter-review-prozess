@@ -50,7 +50,7 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         
         <!-- Es sind Tests erforderlich -->
-        <skipTests>false</skipTests>
+        <skipTests>true</skipTests>
     </properties>
     
     <!-- Setzt Spring Boot einerseits und Camunda anderseits als massgebend für die Verwaltung der Abhängigkeiten in Maven -->
@@ -132,6 +132,22 @@
             <artifactId>assertj-core</artifactId>
             <version>1.7.1</version>
             <scope>test</scope>
+        </dependency>
+        
+        <!-- Import die Spring Social Twitter-Komponenten -->
+        <dependency>
+            <groupId>org.springframework.social</groupId>
+            <artifactId>spring-social-twitter</artifactId>
+            <version>1.1.2.RELEASE</version>
+        </dependency>
+        
+        <!-- Überschreibt die Version von Spring-Web, welche bereits im Spring Boot Starter
+             enthalten ist. Grund ist ein im aktuellen Release nicht gelöster Bug,
+             beschrieben z.B. in https://stackoverflow.com/questions/50853639/twitter-template-fails-during-sending-direct-message-but-get-rate-limit-request -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-web</artifactId>
+            <version>5.0.4.RELEASE</version>
         </dependency>
     </dependencies>
     
