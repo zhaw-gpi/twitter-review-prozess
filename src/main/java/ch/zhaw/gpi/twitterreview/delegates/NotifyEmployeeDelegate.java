@@ -32,6 +32,7 @@ public class NotifyEmployeeDelegate implements JavaDelegate {
     public void execute(DelegateExecution de) throws Exception {
         // Prozessvariablen auslesen
         String email = (String) de.getVariable("email");
+        String firstName = (String) de.getVariable("firstName");
         String tweetContent = (String) de.getVariable("tweetContent");
         String checkResult = (String) de.getVariable("checkResult");
         String checkResultComment = (String) de.getVariable("checkResultComment");
@@ -50,7 +51,7 @@ public class NotifyEmployeeDelegate implements JavaDelegate {
         }
         
         // Mail-Text zusammenbauen
-        String mailBody = "Hallo Mitarbeiter\n\n" + "Du hast folgenden Text zum " +
+        String mailBody = "Hallo " + firstName + "\n\n" + "Du hast folgenden Text zum " +
                 "Veröffentlichen als Tweet vorgeschlagen:\n" + tweetContent + "\n\n" +
                 mailHauptteil + "\n\n" + "Deine Kommunikationsabteilung";
         
