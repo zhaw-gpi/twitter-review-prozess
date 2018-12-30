@@ -1,64 +1,72 @@
-Björn Scheppler, 12.9.2018
+# Twitter Review Extended (twitter-review-prozess)
 
-# Twitter-Review-Prozess (twitter-review-prozess)
-Dieses Maven-Projekt dient den Studierenden des Moduls Geschäftsprozessintegration, um Schritt für Schritt eine Prozessapplikation zu erstellen. Im Endausbau enthalten sind folgende Funktionalitäten:
-1. Spring Boot 2.0.2 konfiguriert für Tomcat
-2. Camunda Spring Boot Starter 3.0.0
-3. Camunda Process Engine, REST API und Webapps (Tasklist, Cockpit, Admin) in der Version 7.9.2 (Enterprise Edition)
-4. H2-Datenbank-Unterstützung (von Camunda Engine benötigt)
-5. Spring Boot Starter Mail für den Email-Versand und zugehörige Klasse EmailService
-6. "Sinnvolle" Grundkonfiguration in application.properties für Camunda, Datenbank, Tomcat und EMail
-7. Ein Beispielprozess (Verarbeitung von Tweet-Anfragen) bestehend aus:
-    1. BPMN-Modell mit User Tasks und Service Tasks
-    2. HTML-Formulare als Implementation für die User Tasks/das Startformular
-    3. Eine JavaDelegate-Klasse und eine EmailService-Klase als Implementation für den Service Task "Mitarbeiter benachrichtigen" (per Mail)
-    4. Analoges für den Service Task "Tweet senden", wobei dort zusätzlich eine TwitterService-Klasse sowie Spring Social Twitter vorhanden ist.
+> Autoren der Dokumentation: Björn Scheppler
 
-## Verwendete Quellen
-Die aktuelle Version basiert vor allem auf dem Get Started-Beispiel von Camunda 7.9 (https://docs.camunda.org/get-started), verwendet aber auch das Know-How aus dem Umzugsprojekt des Herbstsemesters 2017.
+> Dokumentation letztmals aktualisiert: 30.12.2018
 
-## Vorbereitungen, Deployment und Start
+**Maven**-Projekt für eine [**Camunda Prozessapplikation**](https://camunda.com/), in welchem Mitarbeiter Texte vorschlagen können, welche nach erfolgreicher Prüfung durch die Kommunikationsabteilung auf **Twitter** veröffentlicht werden.
+
+Dieses Projekt ist eine stark erweiterte Version des [Camunda Quickstart-Beispiels](https://github.com/camunda/camunda-bpm-examples/tree/master/spring-boot-starter/example-twitter). Erarbeitet am [**Institut für Wirtschaftsinformatik** an der ZHAW School of Management and Law](http://www.zhaw.ch/iwi) im Rahmen des [Bachelor-Studiengangs Wirtschaftsinformatik](https://www.zhaw.ch/de/sml/studium/bachelor/wirtschaftsinformatik/) im [**Modul Geschäftsprozessintegration**](https://modulmanagement.sml.zhaw.ch/StaticModDescAblage/Modulbeschreibung_w.BA.XX.2GPI-WIN.XX.pdf).
+
+## Dokumentation
+Um dieses Projekt nachzubauen, gibt es eine Schritt-für-Schritt-Anleitung als PDF im Ordner \src\docs.
+
+## Komponenten / Funktionalität
+1. **Spring Boot**-Applikation mit Tomcat Server, usw.
+2. **Camunda** Process Engine, REST API und Webapps (Tasklist, Cockpit, Admin)
+3. **H2**-Datenbank für die Camunda Process Engine
+4. **Email**-Versand
+5. **Prozess** zur Verarbeitung von Tweet-Anfragen bestehend aus:
+    1. **BPMN**-Modell
+    2. Generierte HTML **Formulare** für:
+        1. Startformular (gewünschten Tweet-Text erfassen)
+        2. User Task "Tweet-Anfrage prüfen"
+        3. User Task "Tweet-Anfrage überarbeiten"
+    3. Service Task **Benutzer-Informationen auslesen** aufrufend:
+        1. GetUserInformationDelegate-Klasse, welche ein User-Objekt basierend auf dem Benutzernamen ermittelt...
+        2. ... über eine UserService-Klasse, die ihrerseits wiederum per REST auf ...
+        3. ... einen **User Service** zugreift -> separates Projekt [hier](https://github.com/zhaw-gpi/userservice)
+    4. Service Task **Tweet senden** aufrufend:
+        1. SendTweetDelegate-Klasse, welche den gewünschten Tweet-Text veröffentlicht, ...
+        2. ... über die Nutzung einer TwitterService-Klasse, welche ihrerseits per **Spring Social Twitter** auf die Twitter REST API zugreift.
+    5. Service Task **Mitarbeiter benachrichtigen** aufrufend:
+        1. NotifyEmployeeDelegate-Klasse, welche den Mitarbeiter bei Genehmigung oder Ablehnung per Mail benachrichtigt ...
+        2. ... über eine EmailService-Klasse, welche ihrerseits über **Spring Boot Starter Mail** eine Mail versendet.
+    6. **Angeheftete Zeitzwischenereignisse** an die User Tasks, welche nach 3 Tagen Inaktivität dazu führen, dass der Mitarbeiter benachrichtigt und der Prozess beendet wird.
+    7. **Test Package**: Achtung, dieses funktioniert nicht mit der fertigen Lösung, sondern nur, wenn man der Anleitung Schritt-für-Schritt in src\docs folgt. Daher ist im pom.xml die skipTests-Property auf true gesetzt.
+
+## Deployment
 1. Wenn man die **Enterprise Edition** von Camunda verwenden will, benötigt man die Zugangsdaten zum Nexus Repository und eine gültige Lizenz. Wie man diese "installiert", steht in den Kommentaren im pom.xml.
 2. **Erstmalig** oder bei Problemen ein **Clean & Build (Netbeans)**, respektive `mvn clean install` (Cmd) durchführen
 3. Bei Änderungen am POM-File oder bei **(Neu)kompilierungsbedarf** genügt ein **Build (Netbeans)**, respektive `mvn install`
-4. Damit der **Mail-Versand** funktioniert, ist der Bereich # Mail-Konfiguration in application.properties anzupassen:
-    1. Falls nicht Gmail genutzt wird, entsprechende Angaben zum **SMTP-Server** einfügen
-    2. Falls **Gmail** genutzt wird, in Netbeans unter Project ->Properties ->Actions -> Run project (und Debug project) -> Set Properties: Add **neue Umgebungsvariablen** anzulegen: Env.mailUser=BENUTZERNAME und Env.mailPass=PASSWORT. Das kann z.B. das Konto von zwi.sml@gmail.com sein oder ein Beliebiges -> Achtung: falls Zwei-Faktoren-Authentifizierung aktiviert ist, muss ein App-Passwort erstellt werden gemäss https://support.google.com/accounts/answer/185833?hl=de.
-    3. Falls gar keine "echte" Mail gesendet werden soll: In application.properties **mail.debug** auf true setzen. Dann wird kein Mail versendet, sondern nur eine Ausgabe in die Kommandozeile erfolgt.
-5. Für den **Start** ist ein **Run (Netbeans)**, respektive `java -jar .\target\NAME DES JAR-FILES.jar` (Cmd) erforderlich. Dabei wird Tomcat gestartet, die Datenbank erstellt/hochgefahren, Camunda in der Version 7.9 mit dem Beispiel-Prozess und den Eigenschaften (application.properties) hochgefahren.
-6. Das **Beenden** geschieht mit **Stop Build/Run (Netbeans)**, respektive **CTRL+C** (Cmd)
-7. Falls man die bestehenden **Prozessdaten nicht mehr benötigt** und die Datenbank inzwischen recht angewachsen ist, genügt es, die Datei DATENBANKNAME.mv.db im Wurzelverzeichnis des Projekts zu löschen.
+4. Damit der **Mail-Versand** funktioniert, ist der Bereich # Mail-Konfiguration in application.properties anzupassen und/oder die dort aufgeführten Umgebungsvariablen zu setzen.
+5. Damit die Kommunikation mit **Twitter** funktioniert, muss eine twitter.properties-Datei angelegt werden in src\main\ressources mit den Zeilen:
+    twitter.consumerKey=
+    twitter.consumerSecret=
+    twitter.accessToken=
+    twitter.accessTokenSecret=
 
-## Grundlegende Nutzung (Tasklist und Cockpit)
-1. http://localhost:8080 aufrufen
-2. Anmelden mit Benutzername und Passwort a
-3. Tasklist öffnen (und in einem separaten Tab das Cockpit)
-4. "Start Process" > "Verarbeitung von Tweet-Anfragen"
-5. Nun wird man durch den Prozess geführt. Folgende Hinweise:
-    1. Bei E-Mail-Adresse eine funktionierende Mail-Adresse eingeben, an die man auch wirklich eine Benachrichtigung will.
+## Nutzung
+### Normal
+1. Für den **Start** ist ein **Run (Netbeans)**, respektive `java -jar .\target\NAME DES JAR-FILES.jar` (Cmd) erforderlich.
+2. Das **Beenden** geschieht mit **Stop Build/Run (Netbeans)**, respektive **CTRL+C** (Cmd)
+3. Falls man die bestehenden **Prozessdaten nicht mehr benötigt** und die Datenbank inzwischen recht angewachsen ist, genügt es, die Datei DATENBANKNAME.mv.db im Wurzelverzeichnis des Projekts zu löschen.
+4. http://localhost:8080 aufrufen
+5. Anmelden mit Benutzername a und Passwort a
+6. Tasklist öffnen (und in einem separaten Tab das Cockpit)
+7. "Start Process" > "Verarbeitung von Tweet-Anfragen"
+8. Nun wird man durch den Prozess geführt. Folgende Hinweise:
+    1. Die E-Mail-Adresse wird aus dem UserService ausgelesen, daher dort sinnvolle Testdaten setzen.
     2. Bei "Tweet-Anfrage" prüfen ist ein Claim erforderlich, da bewusst jede Person aus der Kommunikationsabteilung, die Aufgabe ausführen können soll. Der Nutzer a hat als Admin Zugriff auf alle Aufgaben. PS: Selbst wenn man einen zusätzlichen Nicht-Admin-Benutzer erstellt und diesen nicht der Gruppe kommunikationsabteilung zuweist, sieht er trotzdem alle Aufgaben für diese. Grund: Authorisierung ist standardmässig deaktiviert => Jeder Benutzer hat alle Rechte.
-6. Im Cockpit kann man bei Bedarf den Prozessfortschritt und mehr verfolgen
+    3. Wenn man zu lange wartet, bevor man einen User Task erledigt, kann es sein, dass dieser Task gelöscht wird wegen dem angehefteten Zeitereignis.
+9. Im Camunda Cockpit kann man bei Bedarf den Prozessfortschritt und mehr verfolgen
 
-## Fortgeschrittene Nutzung (Duplikat-Tweet-Fehler und Behebung)
-In diesem Beispiel geht es darum zu zeigen, wie ein Fehler im Twitter Service zu einem Incident der entsprechenden Prozessinstanz führt, welcher im Cockpit "behoben" werden kann und über einen Retry dieses Mal fehlerfrei abläuft.
-1. Auf der Twitter-Timeline den letzten Post in die Zwischenablage kopieren (Ziel ist, eine DuplicateStatusException zu provozieren)
-2. Tasklist öffnen (und in einem separaten Tab das Cockpit)
-3. "Start Process" > "Verarbeitung von Tweet-Anfragen"
-4. Den Text aus der Zwischenablage einfügen
-5. Im nächsten Schritt die Tweet-Anfrage genehmigen => ein neuer Task wird erstellt
-7. Dieser wird den Task aufnehmen, aber einen Fehler produzieren (DuplicateStatusException) und diesen an die Process Engine weitergeben.
-8. Dies führt dort zu einem Incident (im Cockpit zu sehen).
-9. Eine Variante, den Incident im Cockpit zu beheben ist:
-    1. Die Variable TweetContent so anpassen, dass sie kein Duplikat mehr darstellt.
-    2. Einen Retry des External Tasks anzustossen.
-    3. Warten, bis es dieses Mal fehlefrei durchläuft.
-
-## Fortgeschrittene Nutzung (H2 Console)
-1. Um auf die Datenbankverwaltungs-Umgebung zuzugreifen, http://localhost:8080/console eingeben.
+### Fortgeschrittene Nutzung (Datenbank-Konsole)
+1. Um auf die Datenbankverwaltungs-Umgebung zuzugreifen, http://localhost:TOMCAT_PORT/console eingeben.
 2. Anmeldung über:
     1. Benutzername sa
     2. Passwort: leer lassen
-    3. URL jdbc:h2:./zhaw-gpi
+    3. URL jdbc:h2:./DATENBANKNAME_GEMAESS_APPLICATION.PROPERTIES
 
-## Fortgeschrittene Nutzung (Zugriff über REST)
-Die Engine kann auch per REST API gesteuert werden. Hierzu die Dokumentation unter https://docs.camunda.org/manual/7.9/reference/rest/ lesen. Wegen Spring Boot ist die URL für die REST API minimal anders als in der Dokumentation beschrieben. Sie ist: http://localhost:8080/rest/. So gibt z.B. http://localhost:8080/rest/engine den Namen der Engine (default) zurück.
+### Fortgeschrittene Nutzung (Zugriff über REST)
+Die Process Engine kann auch per REST API gesteuert werden. Hierzu die Dokumentation unter https://docs.camunda.org/manual/latest/reference/rest/ lesen. Wegen Spring Boot ist die URL für die REST API minimal anders als in der Dokumentation beschrieben. Sie ist: http://localhost:TOMCAT_PORT/rest/. So gibt z.B. http://localhost:TOMCAT_PORT/rest/engine den Namen der Engine (default) zurück.
